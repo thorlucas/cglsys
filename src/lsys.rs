@@ -32,7 +32,7 @@ where
     S: Copy,
 {
     fn axiom(&self) -> Vec<A>;
-    fn rules(&self, atom: &A, left_context: &[A], right_context: &[A]) -> Vec<A>;
+    fn production_rules(&self, atom: &A, left_context: &[A], right_context: &[A]) -> Vec<A>;
     fn process(&self, context: &mut Context<T, S>, atom: &A);
 }
 
@@ -58,7 +58,7 @@ where
             println!("Atom: {:?}", atom);
             println!("RC: {:?}", right_context);
 
-            res.extend(lsys.rules(atom, left_context, right_context));
+            res.extend(lsys.production_rules(atom, left_context, right_context));
         }
         cons = res;
     }

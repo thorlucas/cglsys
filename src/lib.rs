@@ -37,7 +37,7 @@ mod tests {
             self.axiom.clone()
         }
 
-        fn rules(
+        fn production_rules(
             &self,
             atom: &SimpleAlphabet,
             left_context: &[SimpleAlphabet],
