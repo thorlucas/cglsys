@@ -1,0 +1,101 @@
+use crate::tree::*;
+use cgmath::{prelude::*, Basis3, Matrix3, Point3, Vector3};
+
+/// Context passed to the lsys which is used to draw add segments.
+pub struct Context<T, S>
+where
+    S: Copy,
+{
+    // TODO: Maybe tree should be private? Add functions for interacting with it.
+    pub tree: Tree<T>,
+    pub state: S,
+    state_stack: Vec<S>,
+}
+
+impl<T, S> Context<T, S>
+where
+    S: Copy,
+{
+    pub fn push(&mut self) {
+        self.state_stack.push(self.state);
+    }
+
+    // TODO: Result?
+    pub fn pop(&mut self) {
+        self.state = self.state_stack.pop().expect("No state on stack");
+    }
+}
+
+/// A determinstic L-system with both left and right contexts.
+pub trait D2LSystem<A, T, S>
+where
+    S: Copy,
+{
+    fn rules(&self, atom: &A, left_context: &[A], right_context: &[A]) -> Vec<A>;
+    fn process(&self, context: &mut Context<T, S>, atom: &A);
+}
+
+pub fn evolve<A, T, S, L>(lsys: &L, seed: Vec<A>, iterations: usize) -> Vec<A>
+where
+    L: D2LSystem<A, T, S>,
+    S: Copy,
+    A: std::fmt::Debug,
+{
+    println!("Evolving: {:?}", seed);
+    let mut cons = seed;
+    for i in 0..iterations {
+        let mut res = vec![];
+        println!("Iter: {}", i);
+        println!("Cons: {:?}", cons);
+        for a in 0..(cons.len()) {
+            let left_context = &cons[..a];
+            let atom = &cons[a];
+            let right_context = &cons[(a + 1)..];
+
+            println!("A: {}", a);
+            println!("LC: {:?}", left_context);
+            println!("Atom: {:?}", atom);
+            println!("RC: {:?}", right_context);
+
+            res.extend(lsys.rules(atom, left_context, right_context));
+        }
+        cons = res;
+    }
+
+    cons
+}
+
+pub fn construct_tree<A, T, S, L, F>(
+    lsys: L,
+    seed: Vec<A>,
+    first_node: T,
+    iterations: usize,
+    initialize_state: F,
+) -> Tree<T>
+where
+    L: D2LSystem<A, T, S>,
+    S: Copy,
+    F: Fn(NodeHandle) -> S,
+    A: std::fmt::Debug,
+{
+    let mut context = {
+        let mut tree: Tree<T> = Tree::<T>::default();
+        let first_node_handle = tree.add_node(first_node);
+        let state = initialize_state(first_node_handle);
+
+        Context {
+            tree,
+            state_stack: vec![],
+            state,
+        }
+    };
+
+    let cons = evolve(&lsys, seed, iterations);
+
+    cons.iter().for_each(|atom| {
+        lsys.process(&mut context, atom);
+    });
+
+    return context.tree;
+}
+
