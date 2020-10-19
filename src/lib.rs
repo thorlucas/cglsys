@@ -32,7 +32,11 @@ mod tests {
         }
     }
 
-    impl D2LSystem<SimpleAlphabet, SimpleNode, SimpleState> for SimpleLSystem {
+    impl D2LSystem for SimpleLSystem {
+        type Alphabet = SimpleAlphabet;
+        type Node = SimpleNode;
+        type State = SimpleState;
+
         fn axiom(&self) -> Vec<SimpleAlphabet> {
             self.axiom.clone()
         }

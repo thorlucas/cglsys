@@ -27,18 +27,24 @@ where
 }
 
 /// A determinstic L-system with both left and right contexts.
-pub trait D2LSystem<A, T, S>
-where
-    S: Copy,
-{
-    fn axiom(&self) -> Vec<A>;
-    fn production_rules(&self, atom: &A, left_context: &[A], right_context: &[A]) -> Vec<A>;
-    fn process(&self, context: &mut Context<T, S>, atom: &A);
+pub trait D2LSystem {
+    type Alphabet;
+    type Node;
+    type State: Copy;
+
+    fn axiom(&self) -> Vec<Self::Alphabet>;
+    fn production_rules(
+        &self,
+        atom: &Self::Alphabet,
+        left_context: &[Self::Alphabet],
+        right_context: &[Self::Alphabet],
+    ) -> Vec<Self::Alphabet>;
+    fn process(&self, context: &mut Context<Self::Node, Self::State>, atom: &Self::Alphabet);
 }
 
 pub fn evolve<A, T, S, L>(lsys: &L, iterations: usize) -> Vec<A>
 where
-    L: D2LSystem<A, T, S>,
+    L: D2LSystem<Alphabet = A, Node = T, State = S>,
     S: Copy,
     A: std::fmt::Debug,
 {
@@ -73,7 +79,7 @@ pub fn construct_tree<A, T, S, L, F>(
     initialize_state: F,
 ) -> Tree<T>
 where
-    L: D2LSystem<A, T, S>,
+    L: D2LSystem<Alphabet = A, Node = T, State = S>,
     S: Copy,
     F: Fn(NodeHandle) -> S,
     A: std::fmt::Debug,
@@ -98,4 +104,3 @@ where
 
     return context.tree;
 }
-

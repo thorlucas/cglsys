@@ -45,14 +45,13 @@ impl Context<Tree3DNode, Tree3DState> {
     }
 }
 
-/// Constructs a `Tree<Tree3DNode>` from a `D2LSystem<A, Tree3DNode, Tree3DState>` with alphabet A.
 pub fn construct_tree_3d<A, L>(
     lsys: L,
     root_node: Tree3DNode,
     iterations: usize,
 ) -> Tree<Tree3DNode>
 where
-    L: D2LSystem<A, Tree3DNode, Tree3DState>,
+    L: D2LSystem<Alphabet = A, Node = Tree3DNode, State = Tree3DState>,
     A: std::fmt::Debug,
 {
     let diameter = root_node.diameter;
