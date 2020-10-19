@@ -31,18 +31,19 @@ pub trait D2LSystem<A, T, S>
 where
     S: Copy,
 {
+    fn axiom(&self) -> Vec<A>;
     fn rules(&self, atom: &A, left_context: &[A], right_context: &[A]) -> Vec<A>;
     fn process(&self, context: &mut Context<T, S>, atom: &A);
 }
 
-pub fn evolve<A, T, S, L>(lsys: &L, seed: Vec<A>, iterations: usize) -> Vec<A>
+pub fn evolve<A, T, S, L>(lsys: &L, iterations: usize) -> Vec<A>
 where
     L: D2LSystem<A, T, S>,
     S: Copy,
     A: std::fmt::Debug,
 {
-    println!("Evolving: {:?}", seed);
-    let mut cons = seed;
+    let mut cons = lsys.axiom();
+    println!("Evolving: {:?}", cons);
     for i in 0..iterations {
         let mut res = vec![];
         println!("Iter: {}", i);
@@ -67,8 +68,7 @@ where
 
 pub fn construct_tree<A, T, S, L, F>(
     lsys: L,
-    seed: Vec<A>,
-    first_node: T,
+    root_node: T,
     iterations: usize,
     initialize_state: F,
 ) -> Tree<T>
@@ -80,8 +80,8 @@ where
 {
     let mut context = {
         let mut tree: Tree<T> = Tree::<T>::default();
-        let first_node_handle = tree.add_node(first_node);
-        let state = initialize_state(first_node_handle);
+        let root_node_handle = tree.add_node(root_node);
+        let state = initialize_state(root_node_handle);
 
         Context {
             tree,
@@ -90,7 +90,7 @@ where
         }
     };
 
-    let cons = evolve(&lsys, seed, iterations);
+    let cons = evolve(&lsys, iterations);
 
     cons.iter().for_each(|atom| {
         lsys.process(&mut context, atom);

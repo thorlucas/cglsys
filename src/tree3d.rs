@@ -48,16 +48,15 @@ impl Context<Tree3DNode, Tree3DState> {
 /// Constructs a `Tree<Tree3DNode>` from a `D2LSystem<A, Tree3DNode, Tree3DState>` with alphabet A.
 pub fn construct_tree_3d<A, L>(
     lsys: L,
-    seed: Vec<A>,
-    first_node: Tree3DNode,
+    root_node: Tree3DNode,
     iterations: usize,
 ) -> Tree<Tree3DNode>
 where
     L: D2LSystem<A, Tree3DNode, Tree3DState>,
     A: std::fmt::Debug,
 {
-    let diameter = first_node.diameter;
-    construct_tree(lsys, seed, first_node, iterations, |handle| Tree3DState {
+    let diameter = root_node.diameter;
+    construct_tree(lsys, root_node, iterations, |handle| Tree3DState {
         last_node: handle,
         next_diameter: diameter,
         heading: Basis3::<f32>::one(),

@@ -22,9 +22,21 @@ mod tests {
         F,
     }
 
-    struct SimpleLSystem;
+    struct SimpleLSystem {
+        axiom: Vec<SimpleAlphabet>,
+    }
+
+    impl SimpleLSystem {
+        pub fn new(axiom: Vec<SimpleAlphabet>) -> Self {
+            SimpleLSystem { axiom }
+        }
+    }
 
     impl D2LSystem<SimpleAlphabet, SimpleNode, SimpleState> for SimpleLSystem {
+        fn axiom(&self) -> Vec<SimpleAlphabet> {
+            self.axiom.clone()
+        }
+
         fn rules(
             &self,
             atom: &SimpleAlphabet,
@@ -85,10 +97,8 @@ mod tests {
 
     #[test]
     fn can_evolve_lsystem() {
-        let lsys = SimpleLSystem;
-
-        let test_case = move |iterations, seed, expected| {
-            assert_eq!(evolve(&lsys, seed, iterations), expected);
+        let test_case = move |iterations, axiom, expected| {
+            assert_eq!(evolve(&SimpleLSystem::new(axiom), iterations), expected);
         };
 
         test_case(0, vec![SimpleAlphabet::F], vec![SimpleAlphabet::F]);
@@ -132,14 +142,8 @@ mod tests {
 
     #[test]
     fn can_construct_tree() {
-        let lsys = SimpleLSystem;
-        let res = construct_tree(
-            lsys,
-            vec![SimpleAlphabet::A(5), SimpleAlphabet::F],
-            SimpleNode(0),
-            0,
-            |handle| SimpleState(handle, 0),
-        );
+        let lsys = SimpleLSystem::new(vec![SimpleAlphabet::A(5), SimpleAlphabet::F]);
+        let res = construct_tree(lsys, SimpleNode(0), 0, |handle| SimpleState(handle, 0));
 
         let e = res.edges().next().unwrap();
         assert_eq!(*e.start, SimpleNode(0));
