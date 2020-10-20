@@ -7,23 +7,58 @@ use syn::{
     parse::{Parse, ParseStream, Result},
     parse_macro_input,
     punctuated::Punctuated,
+    token::{Comma, FatArrow},
     Expr, Ident, Token,
 };
 
 struct Module {
+    pub is_expr: bool,
     pub letter: Ident,
-    pub parameters: Punctuated<Expr, Token![,]>,
+    pub parameters: Option<Punctuated<Expr, Comma>>,
 }
 
 impl Parse for Module {
     fn parse(input: ParseStream) -> Result<Self> {
+        let letter = input.parse()?;
+
+        let inner;
+        parenthesized!(inner in input);
+
+        //if let Ok(parameters) = inner.parse_terminated(Ident::parse) {
+        //return Ok(Module {
+        //letter,
+        //parameters: Some(parameters),
+        //is_expr: false,
+        //replace_expression: None,
+        //});
+        //} else {
+        //return Ok(Module {
+        //letter,
+        //parameters: None,
+        //is_expr: true,
+        //replace_expression: Some(inner.parse_terminated(Expr::parse)?),
+        //});
+        //}
+
+        let parameters = inner.parse_terminated(Expr::parse)?;
+
+        // This module is a replace expression if it's parameters aren't all paths of length 1
+        let mut is_expr = false;
+        parameters.iter().for_each(|expr| match expr {
+            syn::Expr::Path(path) => {
+                if let None = path.path.get_ident() {
+                    is_expr = true;
+                }
+            }
+            _ => {
+                is_expr = true;
+            }
+        });
+
         Ok(Module {
-            letter: input.parse()?,
-            parameters: {
-                let inner;
-                parenthesized!(inner in input);
-                inner.parse_terminated(Expr::parse)?
-            },
+            letter,
+            is_expr,
+            parameters: Some(parameters),
         })
     }
 }
@@ -32,29 +67,39 @@ impl ToTokens for Module {
     fn to_tokens(&self, tokens: &mut TokenStream) {
         let letter = &self.letter;
         let parameters = self.parameters.iter();
+
         tokens.extend(quote! {
              Self::Alphabet::#letter(#(#parameters),*)
         });
     }
 }
 
-struct String(Vec<Module>);
+#[derive(Default)]
+struct String {
+    pub string: Vec<Module>,
+    pub is_expr: bool,
+}
 
 impl Parse for String {
     fn parse(input: ParseStream) -> Result<Self> {
-        let mut string = String(vec![]);
+        let mut string = vec![];
+        let mut is_expr = false;
 
         while let Ok(module) = input.parse::<Module>() {
-            string.0.push(module);
+            if module.is_expr {
+                is_expr = true;
+            }
+
+            string.push(module);
         }
 
-        Ok(string)
+        Ok(String { is_expr, string })
     }
 }
 
 impl ToTokens for String {
     fn to_tokens(&self, tokens: &mut TokenStream) {
-        let modules = self.0.iter();
+        let modules = self.string.iter();
         tokens.extend(quote! {
             #(#modules),*
         });
@@ -77,18 +122,22 @@ impl Parse for ProductionRulePattern {
         if let Ok(_) = input.parse::<Token![<]>() {
             left_context = modules;
             module = input.parse()?;
-        } else if modules.0.len() == 1 {
-            left_context = String(vec![]);
-            module = modules.0.pop().unwrap();
+        } else if modules.string.len() == 1 {
+            left_context = String::default();
+            module = modules.string.pop().unwrap();
         } else {
-            return Err(input.error("expected <"));
+            return Err(input.error("Expected <"));
         }
 
         if let Ok(_) = input.parse::<Token![>]>() {
             right_context = input.parse()?;
         } else {
-            right_context = String(vec![]);
+            right_context = String::default();
         }
+
+        //if left_context.is_expr || right_context.is_expr {
+        //return Err(input.error("Expected parameters, not expressions"));
+        //}
 
         Ok(ProductionRulePattern {
             left_context,
@@ -104,20 +153,22 @@ impl ToTokens for ProductionRulePattern {
         let right_context = &self.right_context;
         let module = &self.module;
 
-        tokens.extend(match (left_context.0.len(), right_context.0.len()) {
-            (a, b) if a > 0 && b > 0 => quote! {
-                (&[.., #left_context], #module, &[#right_context, ..])
+        tokens.extend(
+            match (left_context.string.len(), right_context.string.len()) {
+                (a, b) if a > 0 && b > 0 => quote! {
+                    (&[.., #left_context], #module, &[#right_context, ..])
+                },
+                (a, b) if a == 0 && b > 0 => quote! {
+                    (_, #module, &[#right_context, ..])
+                },
+                (a, b) if a > 0 && b == 0 => quote! {
+                    (&[.., #left_context], #module, _)
+                },
+                _ => quote! {
+                    (_, #module, _)
+                },
             },
-            (a, b) if a == 0 && b > 0 => quote! {
-                (_, #module, &[#right_context, ..])
-            },
-            (a, b) if a > 0 && b == 0 => quote! {
-                (&[.., #left_context], #module, _)
-            },
-            _ => quote! {
-                (_, #module, _)
-            }
-        });
+        );
     }
 }
 
@@ -128,10 +179,8 @@ struct ProductionRule {
 
 impl Parse for ProductionRule {
     fn parse(input: ParseStream) -> Result<Self> {
-        custom_punctuation!(RightArrow, =>);
-
         let pattern: ProductionRulePattern = input.parse()?;
-        input.parse::<RightArrow>()?;
+        input.parse::<FatArrow>()?;
         let replace: String = input.parse()?;
 
         Ok(ProductionRule { pattern, replace })
@@ -140,8 +189,7 @@ impl Parse for ProductionRule {
 
 impl ToTokens for ProductionRule {
     fn to_tokens(&self, tokens: &mut TokenStream) {
-        let pattern = &self.pattern;
-        let replace = &self.replace;
+        let ProductionRule { pattern, replace } = self;
 
         tokens.extend(quote! {
             #pattern => vec![#replace]

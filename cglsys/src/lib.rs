@@ -8,7 +8,6 @@ pub mod tree3d;
 pub use cglsys_macro::production_rules;
 pub use lsys::*;
 
-
 #[cfg(test)]
 mod tests {
     use super::tree::*;
