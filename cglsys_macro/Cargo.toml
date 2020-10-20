@@ -1,0 +1,16 @@
+[package]
+name = "cglsys_macro"
+version = "0.1.0"
+authors = ["Thor Correia <thor.lucas@icloud.com>"]
+edition = "2018"
+license = "MIT"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[lib]
+proc_macro = true
+
+[dependencies]
+proc-macro2 = "1.0.24"
+quote = "1.0.7"
+syn = { version = "1.0.45", features = ["full"]}
