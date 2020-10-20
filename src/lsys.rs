@@ -1,5 +1,4 @@
 use crate::tree::*;
-use cgmath::{prelude::*, Basis3, Matrix3, Point3, Vector3};
 
 /// Context passed to the lsys which is used to draw add segments.
 pub struct Context<T, S>
@@ -104,3 +103,4 @@ where
 
     return context.tree;
 }
+

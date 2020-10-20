@@ -6,7 +6,6 @@ edition = "2018"
 license = "MIT"
 repository = "https://github.com/thorlucas/cglsys"
 
-# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
-
 [dependencies]
 cgmath = "0.17.0"
+cglsys-macro = { path = "lib/cglsys-macro/" }

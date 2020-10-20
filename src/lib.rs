@@ -1,8 +1,13 @@
+#![feature(log_syntax)]
+#![feature(trace_macros)]
+
 mod lsys;
 mod tree;
 pub mod tree3d;
 
+pub use cglsys_macro::production_rules;
 pub use lsys::*;
+
 
 #[cfg(test)]
 mod tests {
@@ -41,25 +46,9 @@ mod tests {
             self.axiom.clone()
         }
 
-        fn production_rules(
-            &self,
-            atom: &SimpleAlphabet,
-            left_context: &[SimpleAlphabet],
-            right_context: &[SimpleAlphabet],
-        ) -> Vec<SimpleAlphabet> {
-            match (left_context, atom, right_context) {
-                (
-                    &[.., SimpleAlphabet::A(a)],
-                    SimpleAlphabet::A(x),
-                    &[SimpleAlphabet::B(b, c)],
-                    ..,
-                ) if a + b + c < 10 => vec![
-                    SimpleAlphabet::B(a + b, a + c),
-                    SimpleAlphabet::A(x + a + b + c),
-                ],
-                (&[..], SimpleAlphabet::B(x, y), &[..]) => vec![SimpleAlphabet::A(x + y)],
-                (&[..], a, &[..]) => vec![*a],
-            }
+        production_rules! {
+            A(a) < A(x) > B(b, c) => B(a + b, a + c) A(x + a + b + c),
+            B(x, y) => A(x + y),
         }
 
         fn process(&self, context: &mut Context<SimpleNode, SimpleState>, atom: &SimpleAlphabet) {
