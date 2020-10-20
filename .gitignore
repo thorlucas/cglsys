@@ -1,5 +1,6 @@
 **/target
-*/target
 /target
+/cglsys/target
+/cglsys_macro/target
 Cargo.lock
 .DS_Store
