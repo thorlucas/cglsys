@@ -21,44 +21,40 @@ impl Parse for Module {
     fn parse(input: ParseStream) -> Result<Self> {
         let letter = input.parse()?;
 
-        let inner;
-        parenthesized!(inner in input);
+        let try_params = || {
+            let inner;
+            parenthesized!(inner in input);
+            inner.parse_terminated(Expr::parse)
+        };
 
-        //if let Ok(parameters) = inner.parse_terminated(Ident::parse) {
-        //return Ok(Module {
-        //letter,
-        //parameters: Some(parameters),
-        //is_expr: false,
-        //replace_expression: None,
-        //});
-        //} else {
-        //return Ok(Module {
-        //letter,
-        //parameters: None,
-        //is_expr: true,
-        //replace_expression: Some(inner.parse_terminated(Expr::parse)?),
-        //});
-        //}
-
-        let parameters = inner.parse_terminated(Expr::parse)?;
+        let parameters = {
+            if let Ok(parameters) = try_params() {
+                Some(parameters)
+            } else {
+                None
+            }
+        };
 
         // This module is a replace expression if it's parameters aren't all paths of length 1
         let mut is_expr = false;
-        parameters.iter().for_each(|expr| match expr {
-            syn::Expr::Path(path) => {
-                if let None = path.path.get_ident() {
+
+        if let Some(parameters) = &parameters {
+            parameters.iter().for_each(|expr| match expr {
+                syn::Expr::Path(path) => {
+                    if let None = path.path.get_ident() {
+                        is_expr = true;
+                    }
+                }
+                _ => {
                     is_expr = true;
                 }
-            }
-            _ => {
-                is_expr = true;
-            }
-        });
+            });
+        }
 
         Ok(Module {
             letter,
             is_expr,
-            parameters: Some(parameters),
+            parameters,
         })
     }
 }
@@ -68,9 +64,15 @@ impl ToTokens for Module {
         let letter = &self.letter;
         let parameters = self.parameters.iter();
 
-        tokens.extend(quote! {
-             Self::Alphabet::#letter(#(#parameters),*)
-        });
+        if parameters.len() == 0 {
+            tokens.extend(quote! {
+                Self::Alphabet::#letter
+            });
+        } else {
+            tokens.extend(quote! {
+                 Self::Alphabet::#letter(#(#parameters),*)
+            });
+        }
     }
 }
 

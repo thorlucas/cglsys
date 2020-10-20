@@ -48,6 +48,7 @@ mod tests {
         production_rules! {
             A(a) < A(x) > B(b, c) => B(a + b, a + c) A(x + a + b + c),
             B(x, y) => A(x + y),
+            F => F F,
         }
 
         fn process(&self, context: &mut Context<SimpleNode, SimpleState>, atom: &SimpleAlphabet) {
