@@ -1,5 +1,5 @@
 [package]
-name = "cglsys-macro"
+name = "cglsys_macro"
 version = "0.1.0"
 authors = ["Thor Correia <thor.lucas@icloud.com>"]
 edition = "2018"
