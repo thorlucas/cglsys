@@ -2,8 +2,8 @@ use crate::{lsys::*, tree::*};
 use cgmath::{prelude::*, Basis3, Matrix3, Point3, Vector3};
 
 pub struct Tree3DNode {
-    position: Point3<f32>,
-    diameter: f32,
+    pub position: Point3<f32>,
+    pub diameter: f32,
 }
 
 #[derive(Copy, Clone)]
@@ -15,7 +15,7 @@ pub struct Tree3DState {
 
 impl Context<Tree3DNode, Tree3DState> {
     /// Adds a new node a distance in the current heading from the previous node.
-    pub fn forward<F>(&mut self, length: f32) {
+    pub fn forward(&mut self, length: f32) {
         let delta: Vector3<f32> = {
             let change_basis: Matrix3<f32> = self.state.heading.into();
             length * change_basis * Vector3::unit_y()
@@ -24,12 +24,14 @@ impl Context<Tree3DNode, Tree3DState> {
         let start = self.tree.get(self.state.last_node).position;
         let end = start + delta;
 
-        let new_node = Tree3DNode {
+        let new_node = self.tree.add_node(Tree3DNode {
             position: end,
             diameter: self.state.next_diameter,
-        };
+        });
 
-        self.state.last_node = self.tree.add_node(new_node);
+        self.tree.add_edge(self.state.last_node, new_node);
+
+        self.state.last_node = new_node;
     }
 
     /// Sets the diameter which will be used by the proceeding nodes.
@@ -38,7 +40,7 @@ impl Context<Tree3DNode, Tree3DState> {
     }
 
     /// Rotates the heading by the euler angles x, y, and z in radians.
-    pub fn rotate<A>(&mut self, x: cgmath::Rad<f32>, y: cgmath::Rad<f32>, z: cgmath::Rad<f32>) {
+    pub fn rotate(&mut self, x: cgmath::Rad<f32>, y: cgmath::Rad<f32>, z: cgmath::Rad<f32>) {
         let euler = cgmath::Euler::new(x, y, z);
         let rot = cgmath::Basis3::from_quaternion(&cgmath::Quaternion::from(euler));
         self.state.heading = self.state.heading * rot;

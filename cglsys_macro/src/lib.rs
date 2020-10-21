@@ -212,7 +212,7 @@ impl ToTokens for ProductionRules {
         let rules = self.0.iter();
         tokens.extend(quote! {
             fn production_rules(&self, module: &Self::Alphabet, left_context: &[Self::Alphabet], right_context: &[Self::Alphabet]) -> Vec<Self::Alphabet> {
-                match (left_context, module, right_context) {
+                match (left_context, *module, right_context) {
                     #(#rules),*,
                     (_, m, _) => vec![m.clone()],
                 }

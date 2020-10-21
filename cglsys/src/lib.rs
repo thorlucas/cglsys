@@ -2,6 +2,7 @@
 #![feature(trace_macros)]
 
 mod lsys;
+pub mod premade;
 mod tree;
 pub mod tree3d;
 

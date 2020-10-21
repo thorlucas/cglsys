@@ -48,21 +48,12 @@ where
     A: std::fmt::Debug,
 {
     let mut cons = lsys.axiom();
-    println!("Evolving: {:?}", cons);
-    for i in 0..iterations {
+    for _ in 0..iterations {
         let mut res = vec![];
-        println!("Iter: {}", i);
-        println!("Cons: {:?}", cons);
         for a in 0..(cons.len()) {
             let left_context = &cons[..a];
             let atom = &cons[a];
             let right_context = &cons[(a + 1)..];
-
-            println!("A: {}", a);
-            println!("LC: {:?}", left_context);
-            println!("Atom: {:?}", atom);
-            println!("RC: {:?}", right_context);
-
             res.extend(lsys.production_rules(atom, left_context, right_context));
         }
         cons = res;
