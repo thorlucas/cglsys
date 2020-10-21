@@ -21,23 +21,21 @@ impl Parse for Module {
     fn parse(input: ParseStream) -> Result<Self> {
         let letter = input.parse()?;
 
-        let try_params = || {
+        let parameters = if input.peek(syn::token::Paren) {
             let inner;
             parenthesized!(inner in input);
-            inner.parse_terminated(Expr::parse)
-        };
-
-        let parameters = {
-            if let Ok(parameters) = try_params() {
-                Some(parameters)
-            } else {
-                None
-            }
+            Some(inner.parse_terminated(Expr::parse)?)
+        } else {
+            None
         };
 
         // This module is a replace expression if it's parameters aren't all paths of length 1
         let mut is_expr = false;
 
+        // TODO: Ideally if we knew the module was on the left or right hand side we would not have to do
+        // this. We would just know whether to look for Ident or Expr. But I can't figure out how I
+        // would pass that information without writing a separate Module struct. Maybe like an
+        // enum, Module::Pattern and Module::Expr or something.
         if let Some(parameters) = &parameters {
             parameters.iter().for_each(|expr| match expr {
                 syn::Expr::Path(path) => {
